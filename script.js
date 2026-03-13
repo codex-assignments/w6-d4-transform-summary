@@ -1,154 +1,158 @@
 "use strict";
 
-const items = [
-  { name: "Potion", type: "Healing", price: 10 },
-  { name: "Scroll of Healing", type: "Healing", price: 7 },
-  { name: "Elixir", type: "Healing", price: 25 },
-  { name: "Bomb", type: "Damage", price: 15 },
-  { name: "Arrow", type: "Damage", price: 5 },
+const baseURL = "https://swapi.dev/api/species";
+const mainEl = document.getElementById("mainEl");
+
+const swSpecies = [
+  { name: "Human", classification: "mammal", lifespan: 120 },
+  { name: "Wookie", classification: "mammal", lifespan: 400 },
+  { name: "Hutt", classification: "gastropod", lifespan: 1000 },
+  { name: "Yoda's species", classification: "mammal", lifespan: 900},
+  { name: "Ewok", classification: "mammal", lifespan: 120},
+  { name: "Test Species", classification: "mammal", lifespan: 58},
 ];
 
-const main = document.getElementById("main");
+// *map function to return a new array of each object with the lifespans halved*
 
-// forEach is an array method
-
-// forEach will set up a forLoop and loop through the entire array and each item with keys
-
-// map can do more
-const elements = items.map((item) => {
-  const p = document.createElement("p");
-  p.textContent = item.name;
-  return p;
-});
-
-// console.log(elements)
-// main.append(...elements)no n
-
-const withTax = items.map((item) => {
+const halfLifespans = swSpecies.map((object) => {
   return {
-    name: item.name,
-    type: item.type,
-    price: (item.price * 1.1).toFixed(2),
+    name: object.name,
+    classification: object.classification,
+    lifespan: object.lifespan * 0.5,
   };
 });
 
-// console.log(withTax);
+render2(halfLifespans, "Map function used to half all lifespans:");
 
-// Filter
+// *filter function to filter out only mammals*
 
-const healingItems = items.filter((item) => {
-  return item.type === "Healing";
+const mammalsOnly = swSpecies.filter((item) => {
+  return item.classification === "mammal";
 });
 
-// console.log(healingItems)
+render2(mammalsOnly, "Filter function used to filter for only mammals (normal lifespans):");
 
-const expensive = items.filter((item) => {
-  return item.price >= 15;
-});
 
-// console.log(expensive)
+// *reduce function to get average lifespan of only mammals*
 
-function render(myItems, heading) {
-    const h2 = document.createElement("h2")
-    h2.textContent = heading;
-    main.appendChild(h2);
-    // because its an array, use forEach function
-    myItems.forEach((item) => {
-        const name = document.createElement("p");
-        name.textContent = item.name;
-        const typeOfItem = document.createElement("p");
-        typeOfItem.textContent = item.type;
-        const price = document.createElement("p");
-        price.textContent = item.price;
-        const hr = document.createElement("hr");
-        if (!item.name) {
-            main.appendChild(hr);
-            return
-        }
-        main.appendChild(name);
-        main.appendChild(typeOfItem);
-        main.appendChild(price);
-        main.appendChild(hr);
-});
+// basic function to find the average of an array of just numbers, console reads 2.5
+function average(nums) {
+    return nums.reduce((a, b) => (a + b)) / nums.length;
+    
+}
+console.log(average([1,2,3,4]))
+
+
+// finding an average from values found in an array of objects, WITHOUT REDUCE
+
+let lifespanSum = 0;
+let itemsFound = 0;
+
+const len = swSpecies.length // get length of array, or how many objects in the array
+
+let eachObject = null;
+
+for (let i = 0; i < len; i++) {//forLoop
+    eachObject = swSpecies[i]; // loops through array swSpecies
+    //for each object in the array
+        lifespanSum = eachObject.lifespan + lifespanSum; 
+        itemsFound = itemsFound + 1;
+    
 }
 
+const avgLifespan1 = lifespanSum / itemsFound;
+console.log(avgLifespan1)
 
-render(expensive, "Expensive Items");
-render([{}])
-render(healingItems, "Healing Items");
-render([{}]);
-render(withTax, "Items with Taxes");
+render3(avgLifespan1,"hi")
 
 
-
-let sum = 0; 
-
-for (let i = 0 ; i < items.length; i++){
-    const item = withTax[i];
-
-    sum += Number(item.price)
-
-
-}
-
-console.log(sum)
-
-// Reduce method
-
-const total = items.reduce((sum, item) => {
-    return sum + item.price
-}, 0)
-
-console.log(total)
-
-
-
-const counts = items.reduce((result, item) => {
-    if (result[item.type] === undefined) {
-        // if you haven't seen this yet, assign it to 1
-        result[item.type] = 1
-    } else {
-        // if we have seen it already, increase the value by 1
-        result[item.type] = result[item.type] +1
-    }
-    return result
-}, {})
-
+// * code related to pulling from API after this *
+// generic fetch function
 async function getData(url) {
-    try {
-        const res = await fetch(url)
-        if (!res.ok) {
-            throw new Error ("No fetchy")
-        }
-        const data = await res.json()
-        return data
-    } catch (error) {
-        console.log(error)
-        
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error("Something went wrong with fetching the data.");
     }
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.log(error);
+  }
 }
 
-function renderPokemon({ results }) {
-    results.forEach(pokemon => {
-        const p = document.createElement("p")
+// generic render function to render data in a paragraph at "mainEl" element, looping through each object and pulling the value for the key "name" and adding it to a list
+// it also capitalizes and adds the first letter and removes the uncapitalized letter, replacing it
 
-        const firstLetter = pokemon.name.charAt(0).toUpperCase()
-        const remaining = pokemon.name.slice(1)
-        const fullname = firstLetter + remaining
-        
-        p.textContent = fullname;
-        main.appendChild(p)
-    })
+function render({ results }, heading) {
+  // heading of section
+  const h2 = document.createElement("h2");
+  h2.textContent = heading;
+  mainEl.appendChild(h2);
+
+  // forEach to render each value from each object with key "name"
+
+  results.forEach((data) => {
+    const p = document.createElement("p");
+
+    p.textContent = data.name;
+    mainEl.appendChild(p);
+  });
 }
 
-async function run() {
-    try {
-        const pokemon = await getData("https://pokeapi.co/api/v2/pokemon/");
-        renderPokemon(pokemon)
-                
-    } catch (error) {
-        console.log(error)
+// generic render function for non-API array data, used for data with lifespans in this code
+
+function render2(object, heading) {
+  // heading of section
+  const h2 = document.createElement("h2");
+  h2.textContent = heading;
+  mainEl.appendChild(h2);
+
+  // forEach to render each value from each object with keys "name", "classification", and "lifespan"
+
+  object.forEach((item) => {
+    const name = document.createElement("p");
+    name.textContent = "Name: " + item.name;
+    mainEl.appendChild(name);
+    const classification = document.createElement("p");
+    classification.textContent = "Classification: " + item.classification;
+    mainEl.appendChild(classification);
+
+    const lifespanOutput = document.createElement("p");
+    lifespanOutput.textContent = "Lifespan: " + item.lifespan;
+    mainEl.appendChild(lifespanOutput);
+
+    //   insert a hr line after each object output and if it is an empty array, do it as well and end function
+    const hr = document.createElement("hr");
+    if (!object.name) {
+      mainEl.appendChild(hr);
+      return;
     }
+  });
 }
 
-run()
+function render3(thing, heading) {
+  // heading of section
+    const h2 = document.createElement("h2");
+    h2.textContent = heading;
+    mainEl.appendChild(h2);
+    const p = document.createElement("p")
+    p.textContent=thing
+    //   insert a hr line after each object output and if it is an empty array, do it as well and end function
+    const hr = document.createElement("hr");
+    mainEl.appendChild(hr);
+}
+
+// main function used to pull data from SWAPI and render "results" in a list, the render function identifies which key from results to render
+
+async function main() {
+  try {
+    const swdata = await getData(baseURL);
+    console.log(swdata.results);
+    render(swdata, "Star Wars species pulled from SWAPI:");
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+main();
